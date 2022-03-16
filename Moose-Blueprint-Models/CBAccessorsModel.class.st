@@ -71,6 +71,11 @@ CBAccessorsModel >> initialize [
 	attributeAccess := OrderedCollection new
 ]
 
+{ #category : #testing }
+CBAccessorsModel >> isMethodModel [
+	^ false
+]
+
 { #category : #accessing }
 CBAccessorsModel >> modelType [
 	^ modelType
@@ -126,7 +131,7 @@ CBAccessorsModel >> shape [
 		         " height: self description height;
 		         width: self description width;"
 		         popupText: self name asString.
-	shape @ RSDraggable.
+	shape addInteraction: NCBDraggable new.
 	^ shape
 ]
 

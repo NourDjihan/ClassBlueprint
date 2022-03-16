@@ -3,18 +3,12 @@ I represent a model for a FAMIXClass
 "
 Class {
 	#name : #NClassBlueprint,
-	#superclass : #Object,
+	#superclass : #ClassBlueprint,
 	#instVars : [
-		'attributes',
-		'initializers',
-		'externals',
-		'internals',
-		'accessors',
 		'deadAttributes',
 		'deadMethods',
 		'classVars',
 		'classMethods',
-		'entity',
 		'superAttributes',
 		'complexity'
 	],
@@ -30,64 +24,13 @@ NClassBlueprint class >> newFrom: aFamixClassEntity [
 ]
 
 { #category : #accessing }
-NClassBlueprint >> accessorInvocations [
-	| accessorInvocations |
-	accessorInvocations := self accessors flatCollect: #accessorInvocations.
-
-	^ accessorInvocations
-]
-
-{ #category : #accessing }
-NClassBlueprint >> accessorInvocationsFrom: aSource [
-
-	^ (self accessorInvocations asSet flattened select: [ :each | 
-		   each source = aSource ]) collect: [ :each | each target ]
-]
-
-{ #category : #accessing }
-NClassBlueprint >> accessors [ 
-	^ accessors
-]
-
-{ #category : #accessing }
-NClassBlueprint >> accessors: accessorMethods [
-	accessors :=accessorMethods 
-]
-
-{ #category : #accessing }
-NClassBlueprint >> allAttributeAccesses [
-
-	^ self models collect: [ :each | each attributeAccess ]
-]
-
-{ #category : #accessing }
 NClassBlueprint >> allAttributes [
 
 	^ deadAttributes, superAttributes , attributes  , classVars
 ]
 
-{ #category : #accessing }
-NClassBlueprint >> attributeAccess [
-
-	| attributeAccess |
-	attributeAccess := self allAttributes flatCollect: #attributeAccess.
-
-	^ attributeAccess
-]
-
-{ #category : #accessing }
-NClassBlueprint >> attributeAccessesFrom: aSource [
-	| result |
-	result := (self attributeAccess asSet flattened select: [ :each | 
-		   each source = aSource ]) collect: [ :each | each target ].
-	
-				^ result
-]
-
 { #category : #'as yet unclassified' }
 NClassBlueprint >> attributeMethodTypes [
-
-	" This method needs to be changes/decomposed"
 
 	| mooseModel modelMethods myMethods |
 	mooseModel := entity parentPackage mooseModel.
@@ -99,19 +42,7 @@ NClassBlueprint >> attributeMethodTypes [
 		| occurrences |
 		occurrences := (modelMethods collect: [ :famixM | famixM name ]) 
 			               occurrencesOf: each name.
-			
-		each occurrences: occurrences.
 		each modelType: (self methodOccurrences: occurrences) ]
-]
-
-{ #category : #accessing }
-NClassBlueprint >> attributes [ 
-	^ attributes
-]
-
-{ #category : #accessing }
-NClassBlueprint >> attributes: attributeModels [
-	attributes := attributeModels
 ]
 
 { #category : #accessing }
@@ -129,13 +60,6 @@ NClassBlueprint >> classVars: aCollection [
 	classVars := aCollection 
 ]
 
-{ #category : #'as yet unclassified' }
-NClassBlueprint >> connectAccessors [
-
-	self connectOutgoingAccesses.
-	self connectIncomingAccesses.
-]
-
 { #category : #building }
 NClassBlueprint >> connectAttributes [
 
@@ -148,88 +72,6 @@ NClassBlueprint >> connectAttributes [
 	superAttributes do: [ :each | 
 		sources := each entity incomingAccesses collect: #source.
 		self connectTarget: each entity withAll: sources asSet ]
-]
-
-{ #category : #'as yet unclassified' }
-NClassBlueprint >> connectIncomingAccesses [
-	
-	 accessors do: [ :each | 
-		| sources |
-		sources := each entity incomingInvocations collect: #source.
-		sources ifNotEmpty: [ self connectTarget: each entity withAll: sources ] ]
-]
-
-{ #category : #building }
-NClassBlueprint >> connectIncomingInvocations [ 
-
-	self models do: [ :each | 
-		| sources |
-
-		sources := ((each entity queryIncoming: FamixTInvocation) 
-			                    collect: #sender) asSet.
-		sources ifNotEmpty: [ self connectTarget: each entity withAll: sources ] ]
-]
-
-{ #category : #building }
-NClassBlueprint >> connectInvocations [
-
-	self connectOutgoingInvocations.
-	self connectIncomingInvocations
-]
-
-{ #category : #'as yet unclassified' }
-NClassBlueprint >> connectOutgoingAccesses [
-	
-	 accessors do: [ :accessor | 
-		| att |
-		att := (accessor entity queryOutgoingAccesses collect: #target) asSet.
-		att ifNotEmpty: [ 
-			self connectSource: accessor entity withAll: att ] ]
-]
-
-{ #category : #building }
-NClassBlueprint >> connectOutgoingInvocations [
-
-	self methodModels do: [ :each | 
-		| candidateTargets |
-		candidateTargets := ((each entity queryOutgoing: FamixTInvocation) 
-			                     flatCollect: #candidates) asSet.	
-		candidateTargets ifNotEmpty: [ 
-			self connectSource: each entity withAll: candidateTargets asSet ] ]
-]
-
-{ #category : #building }
-NClassBlueprint >> connectSource: source withAll: targets [
-
-	| connectionInstance sourceModel targetModels |
-	connectionInstance := source newOutgoingConnection.
-	sourceModel := self models detect: [ :each | each entity = source ].
-	targetModels := (targets asSet collect: [ :aTarget | 
-		                 self models
-			                 detect: [ :model | 
-				                 model entity = aTarget "and: [ 
-					                 model entity isAccessor not ]" ]
-			                 ifNone: [ nil "connections with exterior" ] ]) 
-		                reject: #isNil.
-	targetModels ifNotEmpty: [ 
-		connectionInstance source: sourceModel targets: targetModels ]
-]
-
-{ #category : #building }
-NClassBlueprint >> connectTarget: aTarget withAll: sources [
-
-	| connectionInstance targetModel sourceModels |
-	targetModel := self models detect: [ :each | each entity = aTarget ].
-		connectionInstance := targetModel newIncomingConnection.
-	sourceModels := (sources collect: [ :aSource | 
-		                 self models
-			                 detect: [ :model | 
-				                 model entity = aSource "and: [ 
-					                 model entity isAccessor not ]" ]
-			                 ifNone: [ nil "connections with exterior" ] ]) 
-		                reject: #isNil.
-	sourceModels ifNotEmpty: [ 
-		connectionInstance target: targetModel sources: sourceModels ]
 ]
 
 { #category : #building }
@@ -250,8 +92,7 @@ NClassBlueprint >> create [
 
 	self makeConnections.
 	self attributeMethodTypes.
-	self detectComplexitySuperiorTo: complexity.
-
+	self detectComplexitySuperiorTo: complexity
 ]
 
 { #category : #accessing }
@@ -276,7 +117,7 @@ NClassBlueprint >> detectComplexityBetween: beginning and: end [
 
 	| methods |
 	methods := self methodModels select: [ :each | each complexity between: beginning  and: end  ].
-	methods do: [ :each | each activateRedBorder ]. 
+	methods do: [ :each | each isComplex ]. 
 	
 ]
 
@@ -284,70 +125,27 @@ NClassBlueprint >> detectComplexityBetween: beginning and: end [
 NClassBlueprint >> detectComplexitySuperiorTo: aValue [
 
 	| methods |
-	methods := self methodModels select: [ :each | each complexity >= aValue  ].
-	methods do: [ :each | each activateRedBorder ]. 
-	
-]
-
-{ #category : #accessing }
-NClassBlueprint >> entity [ 
-	^ entity
-]
-
-{ #category : #accessing }
-NClassBlueprint >> entity: aClass [
-
-	 entity := aClass
-]
-
-{ #category : #accessing }
-NClassBlueprint >> externals [ 
-	^ externals
-]
-
-{ #category : #accessing }
-NClassBlueprint >> externals: externalMethods [
-	externals := externalMethods
+	methods := self methodModels select: [ :each | 
+		           each complexity > aValue ].
+	methods do: [ :each | each isComplex ]
 ]
 
 { #category : #initialization }
 NClassBlueprint >> initialize [
 
-	accessors := OrderedCollection new.
-	attributes := OrderedCollection new.
+	super initialize.
 	superAttributes := OrderedCollection new.
-	externals := OrderedCollection new.
-	initializers := OrderedCollection new.
-	internals := OrderedCollection new.
 	deadMethods := OrderedCollection new.
 	deadAttributes := OrderedCollection new.
 	classVars := OrderedCollection new.
 	classMethods := OrderedCollection new.
-	complexity := 5.
-]
-
-{ #category : #initialization }
-NClassBlueprint >> initializeAcessors [
-
-	accessors := self entity methods
-		              select: [ :each | each isAccessor ] thenCollect: [ :each | 
-		             CBAccessorsModel newFrom: each ]
-]
-
-{ #category : #initialization }
-NClassBlueprint >> initializeAttributes [
-
-	attributes := (entity attributes select: [ :each | 
-		               each incomingAccesses isNotEmpty and: [ 
-			               each isClassSide not ] ]) collect: [ :anAttribute | 
-		              NCBAttributeModel newFrom: anAttribute ].
+	complexity := 5
 ]
 
 { #category : #initialization }
 NClassBlueprint >> initializeClassMethods [
-	classMethods := self methods
-		                select: [ :each | each isClassSide ].
-	classMethods ifEmpty: [ ^{} ].
+
+	classMethods := (self methods select: [ :each | each isClassSide ] )ifEmpty: [ ^ {} ].
 	classMethods := classMethods collect: [ :each | 
 		                NCBClassSideMethod newFrom: each ]
 ]
@@ -357,7 +155,7 @@ NClassBlueprint >> initializeClassVars [
 
 	classVars := (entity attributes select: [ :each | 
 		              each isClassSide ]) collect: [ :each | 
-		             NCBAttributeModel newFrom: each ]
+		             CBAttributeModel newFrom: each ]
 ]
 
 { #category : #initialization }
@@ -366,7 +164,7 @@ NClassBlueprint >> initializeDeadAttributes [
 	deadAttributes := (entity attributes select: [ :each | 
 		                       each incomingAccesses isEmpty and: [ each isClassSide not ] ]) collect: [ 
 		                      :anAttribute | 
-		                      NCBAttributeModel newFrom: anAttribute ]
+		                      CBAttributeModel newFrom: anAttribute ]
 ]
 
 { #category : #initialization }
@@ -374,9 +172,9 @@ NClassBlueprint >> initializeDeadMethods [
 
 	deadMethods := self methods
 		               select: [ :each | 
-		               each isDeadMethod or: [ each belongsToDeadBranch ] ]
-		               thenCollect: [ :each | 
-		               NCBDeadModel newFrom: each ]
+			               each isDeadMethod or: [  
+				               each belongsToDeadBranch ] ]
+		               thenCollect: [ :each | NCBDeadModel newFrom: each ]
 ]
 
 { #category : #initialization }
@@ -407,14 +205,8 @@ NClassBlueprint >> initializeInitializers [
 NClassBlueprint >> initializeInternals [
 
 	
-	internals := self methods select: [ :each | each isInternal ] thenCollect: [ :each | 
+	internals := self methods select: [ :each | self isInternal: each ] thenCollect: [ :each | 
 		             NCBInternalModel newFrom: each ]
-]
-
-{ #category : #initialization }
-NClassBlueprint >> initializeModelDescriptions [
-
-	self methodModels do: [ :each | each initializeDescription ]
 ]
 
 { #category : #initialization }
@@ -424,51 +216,17 @@ NClassBlueprint >> initializeSuperAttributes [
 		                      :each | each attributes ]) reject: [ :each | 
 		                     each isClassSide ]) select: [ :each | 
 		                    each isCalledIn: self entity ]) collect: [ :each | 
-		                   NCBAttributeModel newFrom: each ] 
+		                   CBAttributeModel newFrom: each ] 
 ]
 
-{ #category : #accessing }
-NClassBlueprint >> initializers [
-	^ initializers
-]
+{ #category : #testing }
+NClassBlueprint >> isInternal: anEntity [ 
 
-{ #category : #accessing }
-NClassBlueprint >> initializers: initializerMethods [
-	initializers := initializerMethods
-]
+	"For the method to be internal: it has to be called internally and not by an initializer method. And is not an initializer method"
 
-{ #category : #accessing }
-NClassBlueprint >> internals [
-	^ internals
-]
-
-{ #category : #accessing }
-NClassBlueprint >> internals: internalMethods [
-	internals := internalMethods
-]
-
-{ #category : #building }
-NClassBlueprint >> makeConnections [
-
-	self connectAttributes.
-	self connectAccessors.
-	self connectInvocations.
-	self initializeModelDescriptions
-]
-
-{ #category : #accessing }
-NClassBlueprint >> methodInvocations [
-	| result |
-	result :=  self methodModels collect: [ :each | each invocations ].
-
-	^ result
-]
-
-{ #category : #accessing }
-NClassBlueprint >> methodInvocationsFrom: aSource [
-
-	^ ((self methodInvocations flatCollect: #outgoing) select: [ :each | 
-		   each source = aSource ]) collect: [ :each | each target ]
+	^ anEntity isOnlyCalledInternally and: [ 
+		anEntity belongsToDeadBranch not and: [  
+			  anEntity isCalledByInitializers not ] ]
 ]
 
 { #category : #accessing }
@@ -484,13 +242,6 @@ NClassBlueprint >> methodOccurrences: aNumber [
 
 	(aNumber between: 2 and: 8) ifTrue: [ ^ #polymorphic ].
 	aNumber >= 8 ifTrue: [ ^ #megamorphic ]
-]
-
-{ #category : #accessing }
-NClassBlueprint >> methods [ 
-	^ (entity methods reject: [ :each | 
-		                  (self methodModels collect: [ :aMethod | aMethod entity ]) includes:
-			                  each ]) reject: #isAccessor
 ]
 
 { #category : #accessing }

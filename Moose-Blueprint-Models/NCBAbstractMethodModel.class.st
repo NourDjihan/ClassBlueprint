@@ -1,18 +1,6 @@
-"
-I represent a method of Class Blueprint.
-"
 Class {
 	#name : #NCBAbstractMethodModel,
-	#superclass : #CBAbstractModel,
-	#instVars : [
-		'accessorInvocations',
-		'attributeAccess',
-		'type',
-		'invocations',
-		'modelType',
-		'complexity',
-		'occurrences'
-	],
+	#superclass : #CBAbstractMethodModel,
 	#category : #'Moose-Blueprint-Models'
 }
 
@@ -30,13 +18,6 @@ NCBAbstractMethodModel class >> abstractBox [
 		  yourself
 ]
 
-{ #category : #'instance creation' }
-NCBAbstractMethodModel class >> newFrom: aMethod [
-	^ self new 
-		entity: aMethod;
-		create 
-]
-
 { #category : #'as yet unclassified' }
 NCBAbstractMethodModel >> abstractBox [
 
@@ -52,63 +33,8 @@ NCBAbstractMethodModel >> abstractBox [
 ]
 
 { #category : #accessing }
-NCBAbstractMethodModel >> accessorInvocations [
-	^ accessorInvocations
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> accessorInvocations: anObject [
-
-	accessorInvocations := anObject
-]
-
-{ #category : #'as yet unclassified' }
-NCBAbstractMethodModel >> activateRedBorder [ 
-	self description complex: true
-
-]
-
-{ #category : #adding }
-NCBAbstractMethodModel >> addAccessorInvocation: aConnection [ 
-	accessorInvocations add: aConnection 
-]
-
-{ #category : #adding }
-NCBAbstractMethodModel >> addIncoming: aMethodInvocationModel [
-
-	((self invocations incoming collect: #source) includes:
-		 aMethodInvocationModel source) ifFalse: [ 
-		invocations incoming add: aMethodInvocationModel ]
-]
-
-{ #category : #adding }
-NCBAbstractMethodModel >> addOutgoing: aMethodInvocationModel [
-
-	((self invocations outgoing collect: #target) includes:
-		 aMethodInvocationModel target) ifFalse: [ 
-		invocations outgoing add: aMethodInvocationModel ]
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> allInvocations [
-
-	^ self invocations incoming , self invocations  outgoing
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> attributeAccess [
-
-	^ attributeAccess
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> attributeAccess: anObject [
-
-	attributeAccess := anObject
-]
-
-{ #category : #accessing }
 NCBAbstractMethodModel >> complexity [
+
 	^ entity computeCyclomaticComplexity 
 ]
 
@@ -117,40 +43,11 @@ NCBAbstractMethodModel >> complexity: aNumber [
 	complexity := aNumber
 ]
 
-{ #category : #'as yet unclassified' }
-NCBAbstractMethodModel >> create [
-
-	accessorInvocations := OrderedCollection new.
-	attributeAccess := OrderedCollection new.
-	invocations := CBInvocations new.
-	complexity := entity computeCyclomaticComplexity.
-	"self initializeDescription"
-]
-
 { #category : #initialization }
 NCBAbstractMethodModel >> initializeDescription [
 
 	description := NCBMethodDescription newFrom: self.
 
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> invocations [
-
-	^ invocations
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> invocations: anObject [
-
-	invocations := anObject
-]
-
-{ #category : #testing }
-NCBAbstractMethodModel >> isAbstract [ 
-
-	entity isAbstract ifTrue: [ ^ #isAbstract ].
-	^ nil
 ]
 
 { #category : #'as yet unclassified' }
@@ -175,64 +72,27 @@ NCBAbstractMethodModel >> isAbstractBox [
 		  yourself
 ]
 
-{ #category : #testing }
-NCBAbstractMethodModel >> isAccessor [
-	 (entity isGetter or: [ entity isSetter ]) ifTrue: [ ^ #accessor ].
-	^ nil
-]
-
-{ #category : #testing }
-NCBAbstractMethodModel >> isConstant [ 
-	"A method that returns a constant value"
-	entity isConstant ifTrue: [ ^ #isConstant ].
-	^ nil
-]
-
-{ #category : #testing }
+{ #category : #'as yet unclassified' }
 NCBAbstractMethodModel >> isDeadMethod [
 
-	(self entity isDeadMethod) ifTrue: [ 
-		^ #isDeadMethod ].
+	(self entity isDead or: self entity belongsToDeadBranch) ifTrue: [ ^ #isDeadMethod ].
 	^ nil
 ]
 
 { #category : #testing }
-NCBAbstractMethodModel >> isDelegating [
+NCBAbstractMethodModel >> isInternal [
 
-	"Checks if the method delegates an invocation i.e, forwars the method call to another object"
-
-	" entity isDelegating ifTrue: [ ^ #isDelegating ]."
-
-	entity isDelegating ifTrue: [ ^ #isDelegating ].
-	^ nil
-]
-
-{ #category : #testing }
-NCBAbstractMethodModel >> isExtending [
-	"Check if a method extends another by super"
-	
-	 entity isExtending ifTrue: [ ^ #isExtending ].
-	^ nil
-]
-
-{ #category : #testing }
-NCBAbstractMethodModel >> isInternal [ 
-	^ entity isInternal
+	"For the method to be internal: it has to be called internally and not by an initializer method. And is not an initializer method"
+	^ self entity isOnlyCalledInternally and: [ 
+		  self entity belongsToDeadBranch not and: [ 
+			  self entity isCalledByInitializers not ] ]
 ]
 
 { #category : #testing }
 NCBAbstractMethodModel >> isInternalImplementation [
 
-	entity isInternal ifTrue: [ 
+	self isInternal ifTrue: [  
 		^ #isInternalImplementation ].
-	^ nil
-]
-
-{ #category : #testing }
-NCBAbstractMethodModel >> isOverriding [
-
-	entity isOverriding ifTrue: [ ^ #isOverriding ].
-
 	^ nil
 ]
 
@@ -244,12 +104,6 @@ NCBAbstractMethodModel >> modelType [
 { #category : #accessing }
 NCBAbstractMethodModel >> modelType: aSymbol [
 	modelType := aSymbol 
-]
-
-{ #category : #'instance creation' }
-NCBAbstractMethodModel >> newIncomingConnection [ 
-
-	^ CBIncomingInvocationsCollector new 
 ]
 
 { #category : #accessing }
@@ -271,13 +125,6 @@ NCBAbstractMethodModel >> openInBrowser [
 		         self entity parentType name.
 	class ifNil: [ self entity inspect ] ifNotNil: [ (class >> self entity name asSymbol) browse ]
 	
-]
-
-{ #category : #printing }
-NCBAbstractMethodModel >> printOn: aStream [.
-	aStream nextPutAll: '('. 
-	self name asString printOn: aStream.
-	aStream nextPutAll: ')'.
 ]
 
 { #category : #accessing }
@@ -306,14 +153,4 @@ NCBAbstractMethodModel >> shape [
 		do: [ :evt | shape popupText: self name asString ].
 	shape addInteraction: NCBDraggable new.
 	^ shape
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> type [
-	^ type
-]
-
-{ #category : #accessing }
-NCBAbstractMethodModel >> type: aType [ 
-	type := aType 
 ]

@@ -193,9 +193,8 @@ CBLegend >> gapSize [
 ]
 
 { #category : #building }
-CBLegend >> legendInfo [
-
-	^ MiNClassBlueprintPalette new colorsDictionary
+CBLegend >> legendInfo [ 
+	self subclassResponsibility 
 ]
 
 { #category : #constants }

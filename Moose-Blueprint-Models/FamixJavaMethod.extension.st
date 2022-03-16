@@ -59,16 +59,19 @@ FamixJavaMethod >> isCalledByInitializers [
 { #category : #'*Moose-Blueprint-Models' }
 FamixJavaMethod >> isCalledExternally [
 
-	^ self incomingInvocations isNotEmpty and: [ 
-		  self incomingInvocations anySatisfy: [ :each | 
-			  (each source inSameClassAs: self) not and: [ 
-				  (each source isSuperOf: self) not ] ] ]
+	| result |
+	result := self incomingInvocations isNotEmpty and: [ 
+		          self incomingInvocations anySatisfy: [ :each | 
+			          (each source inSameClassAs: self) not and: [ 
+				          (each source isSuperOf: self) not ] ] ].
+
+	^ result
 ]
 
 { #category : #'*Moose-Blueprint-Models' }
 FamixJavaMethod >> isDeadMethod [
 
-	^ self isDead or: [ self belongsToDeadBranch ]
+	^ self isDead
 ]
 
 { #category : #'*Moose-Blueprint-Models' }
@@ -103,16 +106,6 @@ FamixJavaMethod >> isInitializer [
 ]
 
 { #category : #'*Moose-Blueprint-Models' }
-FamixJavaMethod >> isInternal [
-
-	"For the method to be internal: it has to be called internally and not by an initializer method. And is not an initializer method"
-
-	^ self isOnlyCalledInternally and: [ 
-		  self belongsToDeadBranch not and: [ 
-			  self isCalledByInitializers not ] ]
-]
-
-{ #category : #'*Moose-Blueprint-Models' }
 FamixJavaMethod >> isInvokedByExternalMethod [
 
 	^ (self incomingInvocations reject: [ :each | 
@@ -124,8 +117,9 @@ FamixJavaMethod >> isInvokedByExternalMethod [
 FamixJavaMethod >> isOnlyCalledInternally [
 
 	^ self incomingInvocations isNotEmpty and: [ 
-		  self incomingInvocations allSatisfy: [ :each | 
-			  each source inSameClassAs: self ] ]
+		          self incomingInvocations allSatisfy: [ :each | 
+			          each source inSameClassAs: self ] ].
+
 ]
 
 { #category : #'*Moose-Blueprint-Models' }

@@ -3,32 +3,29 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'visitedItems',
-		'packageName'
+		'class'
 	],
 	#category : #'Moose-Blueprint-Models'
 }
 
-{ #category : #validation }
-NCBDeadBranchChecker >> initialize [
-
+{ #category : #accessing }
+NCBDeadBranchChecker >> initialize [ 
 	super initialize.
 	visitedItems := Set new
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #validation }
 NCBDeadBranchChecker >> isInDeadBranch: aMethod ofClass: aClass [
 
-	aMethod isDead ifTrue: [ ^ true ].
-
+	aMethod isDeadMethod ifTrue: [ ^ true ].
 	(visitedItems includes: aMethod) ifTrue: [ ^ true ].
 	visitedItems add: aMethod.
 	^ aMethod calledBy allSatisfy: [ :each | 
 		  each parentType ~= aClass ifTrue: [ ^ false ].
-		  self isInDeadBranch: each ofClass: aClass ] 
+		  self isInDeadBranch: each ofClass: aClass ]
 ]
 
-{ #category : #validation }
+{ #category : #accessing }
 NCBDeadBranchChecker >> visitedItems [
-
 	^ visitedItems
 ]
